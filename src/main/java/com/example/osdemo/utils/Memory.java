@@ -1,5 +1,7 @@
 package com.example.osdemo.utils;
 
+import com.example.osdemo.pojo.BDModel;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,14 +10,21 @@ import java.util.Map;
 public class Memory {
     private int size;// 内存大小
     private static final int MIN_SIZE = 2;// 最小剩余分区大小
-    private LinkedList<Zone> zones;// 内存分区
+    private static LinkedList<Zone> zones;// 内存分区
     private int pointer;// 上次分配的空闲区位置
 
+    public static LinkedList<Zone> getZone(){
+        if (zones == null) {
+            zones = new LinkedList<>();
+        }
+        return zones;
+    }
+
     // 新建一个内部类，分区节点类
-    class Zone {
-        private int size;// 分区大小
-        private int head;// 分区始址
-        private boolean isFree;// 空闲状态
+    static class Zone {
+        int size;// 分区大小
+        int head;// 分区始址
+        boolean isFree;// 空闲状态
 
         public Zone(int head, int size) {
             this.head = head;
@@ -58,6 +67,7 @@ public class Memory {
             case 2 -> msg = NF(size);
             case 3 -> msg = BF(size);
             case 4 -> msg = WF(size);
+            case 5 -> msg = BD(size);
             default -> {
                 msg = "请重新选择";
                 System.out.println("请重新选择");
@@ -150,6 +160,39 @@ public class Memory {
         }
     }
 
+    private static LinkedList<BDModel> startend;
+    private static Integer index = 0;
+    public static Integer getIndex(){
+        return index;
+    }
+    public static void setIndex(int num){
+        index = num;
+    }
+    public static LinkedList<BDModel> getStartend(){
+        if (startend == null){
+            startend = new LinkedList<>();
+        }
+        return startend;
+    }
+
+    private String BD(int size) {
+        for(pointer = 0; pointer < zones.size();pointer++){
+            Zone tmp = zones.get(pointer);
+            if (tmp.isFree && (tmp.size > size)){
+                boolean success = Buddy.request_mem(size,pointer,tmp);
+                if (success) {
+                    return "分配成功";
+                }
+            }
+        }
+        return "分配失败";
+    }
+
+    private boolean breakMemory(int size) {
+
+        return false;
+    }
+
     // 开始分配
     private void doAllocation(int size, int location, Zone tmp) {
         // 要是剩的比最小分区MIN_SIZE小，则把剩下那点给前一个进程
@@ -167,7 +210,7 @@ public class Memory {
     // 内存回收
     public Object collection(int id) {
         if (id >= zones.size()) {
-            return {"msg":"无此分区编号"};
+            return "无此分区编号";
         }
         Zone tmp = zones.get(id);
         int size = tmp.size;
